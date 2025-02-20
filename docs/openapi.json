@@ -1,0 +1,17 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+      "title": "App Name",
+      "version": "0.1.0"
+    },
+    "servers": [
+      {
+        "url": "App URL"
+      }
+    ],
+    "paths": {},
+    "components": {
+        "schemas": {},
+        "securitySchemes": {}
+    }
+}
