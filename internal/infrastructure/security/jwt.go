@@ -1,30 +1,41 @@
 package security
 
 import (
-	"go-fiber-template/pkg/config"
+	"os/user"
 	"time"
 
 	"github.com/golang-jwt/jwt"
 )
 
-const (
-	jwtExpIn = time.Hour * 168
-)
+func issure() string {
+	u, err := user.Current()
+	if err != nil {
+		return "jwt.issure"
+	}
+	return u.Username
+}
 
-func GenerateJWTToken(payload map[string]interface{}, cfg *config.Config) (string, error) {
+var defaultPayload = map[string]interface{}{
+	"exp": time.Now().Add(time.Hour * 168).Unix(),
+	"iat": time.Now().Unix(),
+	"nbf": time.Now().Unix(),
+	"iss": issure(),
+}
+
+func GenerateJWTToken(payload map[string]interface{}, secretKey string) (string, error) {
 	claims := jwt.MapClaims{}
-	expIn := time.Now().Add(jwtExpIn).Unix()
-	claims["exp"] = expIn
-	claims["iat"] = time.Now().Unix()
-	claims["iss"] = cfg.TokenIssuer
+
+	for k, v := range defaultPayload {
+		claims[k] = v
+	}
+
 	for key, value := range payload {
 		claims[key] = value
 	}
 
-
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	signedToken, err := token.SignedString([]byte(cfg.SecretKey))
+	signedToken, err := token.SignedString([]byte(secretKey))
 	if err != nil {
 		return "", err
 	}

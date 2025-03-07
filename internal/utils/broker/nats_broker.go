@@ -16,17 +16,17 @@ func NewNatsBroker(natsConn *nats.Conn) *NatsBroker {
 func (n *NatsBroker) Publish(topic string, data map[string]interface{}) error {
 	msg, err := json.Marshal(data)
 	if err != nil {
-		log.Error().Err(err).Msg("Ошибка дампа")
+		log.Error(err, "Ошибка дампа")
 		return err
 	}
 	err = n.natsConn.Publish(topic, msg)
 	if err != nil {
-		log.Error().Err(err).Msgf(
+		log.Error(err,
 			"Ошибка отправки сообщения %s в %s", data, topic,
 		)
 		return err
 	}
-	log.Debug().Msgf("Сообщение %s успешно отправлено в %s", data, topic)
+	log.Debug("Сообщение %s успешно отправлено в %s", data, topic)
 	return nil
 }
 

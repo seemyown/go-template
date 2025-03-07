@@ -5,13 +5,16 @@ import (
 	"go-fiber-template/pkg/logging"
 )
 
-var appLogger = logging.AppLogger
+var log = logging.New(logging.Config{
+	FileName: "servise",
+	Name:     "service",
+})
 
 func main() {
 	app, err := server.New()
 	if err != nil {
-		appLogger.Fatal().Err(err).Msg("Ошибка инициализации приложения")
+		log.Fatal(err, "Ошибка инициализации приложения")
 	}
-	appLogger.Info().Msg("Приложение инициализировано")
-	appLogger.Fatal().Err(app.Listen(":8080")).Msg("Application terminated")
+	log.Info("Приложение инициализировано")
+	log.Fatal(app.Listen(":8080"), "Application terminated")
 }

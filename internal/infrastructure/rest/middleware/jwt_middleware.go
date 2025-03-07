@@ -3,62 +3,76 @@ package middleware
 import (
 	"errors"
 	"fmt"
-	"go-fiber-template/pkg/config"
-	"strings"
-	"time"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt"
+	"go-fiber-template/pkg/logging"
+	"strings"
+	"time"
 )
 
-func JWTMiddleware(config *config.Config) fiber.Handler {
+var _log = logging.New(logging.Config{
+	FileName: "jwt_middleware.log",
+	Name:     "jwt_middleware",
+})
+
+func JWTMiddleware(
+	secret string,
+	checks []func(claims jwt.MapClaims) error,
+) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		authHeader := c.Get("Authorization")
 		if authHeader == "" {
-			log.Warn().Msg("Не авторизованный запрос")
+			_log.Warn("Не авторизованный запрос")
 			return c.Next()
 		}
 		tokenStr, err := extractToken(authHeader)
 		if err != nil {
-			log.Warn().Msg("Не верно передан токен")
+			_log.Warn("Не верно передан токен")
 			return c.Next()
 		}
-		log.Info().Msgf("Входящий запрос с токеном : %s", tokenStr)
+		_log.Info("Входящий запрос с токеном : %s", tokenStr)
 		token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 			}
-			return []byte(config.SecretKey), nil
+			return []byte(secret), nil
 		})
 
 		if err != nil || !token.Valid {
-			log.Error().Err(err).Msg("Некорректный токен")
+			_log.Error(err, "Некорректный токен")
 			return err
 		}
 
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
-			log.Error().Err(err).Msg("Некорректный токен")
+			_log.Error(err, "Некорректный токен")
 			return err
 		}
 
 		exp, ok := claims["exp"].(float64)
 		if !ok {
-			log.Error().Err(err).Msg("Неверный токен")
+			_log.Error(err, "Неверный токен")
 			return err
 		}
 		if int64(exp) < time.Now().Unix() {
-			log.Error().Err(err).Msg("Токен просрочен")
+			_log.Error(err, "Токен просрочен")
 			return err
 		}
 
-		iss, ok := claims["iss"].(string)
+		for _, check := range checks {
+			if err = check(claims); err != nil {
+				_log.Error(err, "Ошибка валидации токена")
+				return err
+			}
+		}
+
+		sub, ok := claims["payload"].(map[string]interface{})
 		if !ok {
-			log.Error().Err(err).Msg("Неверный токен")
+			_log.Error(err, "Не верное содержимое токена")
 			return err
 		}
-		if iss != config.TokenIssuer {
-			log.Error().Err(err).Msg("Неверный источник токена")
-			return err
+		for k, v := range sub {
+			c.Locals(k, v)
 		}
 		// Прочая логика обработки
 		return c.Next()

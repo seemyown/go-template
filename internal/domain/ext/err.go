@@ -1,4 +1,4 @@
-package err
+package ext
 
 import "github.com/gofiber/fiber/v2"
 
