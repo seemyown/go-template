@@ -22,16 +22,16 @@ var defaultPayload = map[string]interface{}{
 	"iss": issure(),
 }
 
-func GenerateJWTToken(payload map[string]interface{}, secretKey string) (string, error) {
+func GenerateJWTToken(tokenPayload, tokenSettings map[string]interface{}, secretKey string) (string, error) {
 	claims := jwt.MapClaims{}
 
 	for k, v := range defaultPayload {
 		claims[k] = v
 	}
-
-	for key, value := range payload {
-		claims[key] = value
+	for k, v := range tokenSettings {
+		claims[k] = v
 	}
+	claims["payload"] = tokenPayload
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 

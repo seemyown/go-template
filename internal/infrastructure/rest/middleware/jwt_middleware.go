@@ -66,12 +66,12 @@ func JWTMiddleware(
 			}
 		}
 
-		sub, ok := claims["payload"].(map[string]interface{})
+		payload, ok := claims["payload"].(map[string]interface{})
 		if !ok {
 			_log.Error(err, "Не верное содержимое токена")
 			return err
 		}
-		for k, v := range sub {
+		for k, v := range payload {
 			c.Locals(k, v)
 		}
 		// Прочая логика обработки
